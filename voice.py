@@ -48,7 +48,8 @@ import whisper
 
 class RealTimeTranscriber:
     def __init__(self, model_size="base", chunk_duration=5, device_index=None,
-                 beam_size=5, best_of=5, temperature=0.0, auto_device=False, who="Guest"):
+                 beam_size=5, best_of=5, temperature=0.0, auto_device=False, who="Guest",
+                 custom_words=None):
         """
         Initialize the real-time transcriber.
         
@@ -70,6 +71,7 @@ class RealTimeTranscriber:
         self.temperature = temperature
         self.auto_device = auto_device
         self.who = who
+        self.custom_words = custom_words or {}
         
         # Audio settings
         self.sample_rate = 16000  # Whisper expects 16kHz
@@ -183,6 +185,9 @@ class RealTimeTranscriber:
                 transcription_time = time.time() - start_time
                 text = result["text"].strip()
                 
+                # Apply custom word replacements
+                text = self.apply_custom_words(text)
+                
                 if text:  # Only print non-empty transcriptions
                     timestamp = datetime.now().strftime("%H:%M")
                     print(f"[{timestamp}] {self.who}: {text}", flush=True)
@@ -240,6 +245,20 @@ class RealTimeTranscriber:
         
         print("Transcription stopped.", flush=True)
     
+    def apply_custom_words(self, text):
+        """Apply custom word replacements for better name recognition."""
+        if not self.custom_words:
+            return text
+        
+        import re
+        for correct_word, variations in self.custom_words.items():
+            for variant in variations:
+                # Case-insensitive replacement while preserving the case style
+                pattern = re.compile(re.escape(variant), re.IGNORECASE)
+                text = pattern.sub(correct_word, text)
+        
+        return text
+    
     def __del__(self):
         """Cleanup PyAudio."""
         if hasattr(self, 'audio'):
@@ -289,9 +308,30 @@ def main():
         default="Guest",
         help="Speaker name to display in transcriptions (default: Guest, use 'Me' for yourself)"
     )
+    parser.add_argument(
+        "--custom-words",
+        type=str,
+        help="JSON file with custom word mappings (e.g., {'Remis': ['remus', 'ramis', 'remiss']})"
+    )
     
     args = parser.parse_args()
     bestQuality = 5
+    
+    # Load custom words if provided
+    custom_words = None
+    if args.custom_words:
+        import json
+        try:
+            with open(args.custom_words, 'r') as f:
+                custom_words = json.load(f)
+        except Exception as e:
+            print(f"Warning: Could not load custom words file: {e}")
+    
+    # Default custom words for common name corrections
+    if not custom_words:
+        custom_words = {
+            "Remis": ["remus", "Remus", "ramis", "Ramis", "remiss", "Remiss", "ramus", "Ramus"]
+        }
     
     # Create transcriber
     transcriber = RealTimeTranscriber(
@@ -302,7 +342,8 @@ def main():
         best_of=bestQuality,
         temperature=args.temperature,
         auto_device=args.auto_device,
-        who=args.who
+        who=args.who,
+        custom_words=custom_words
     )
     
     if args.list_devices:
