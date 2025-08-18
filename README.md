@@ -81,30 +81,18 @@ uv run voice.py --list-devices  # Find BlackHole device number
 uv run voice.py --device <number>
 ```
 
-### 3. System Audio + Microphone
-
-```bash
-# Captures both system audio and your microphone
-uv run voice_system_audio.py --auto-device
-```
-
-### 4. File Output
+### 3. File Output
 
 ```bash
 # Transcribe to file instead of console
-uv run voice_alternative.py --output transcript.txt
+uv run voice.py --output transcript.txt
 ```
 
-## Available Scripts
+## Main Script
 
-| Script | Purpose | Best For |
+| Script | Purpose | Features |
 |--------|---------|----------|
-| `voice.py` | Main transcription tool with auto-device | General use, Zoom meetings |
-| `voice_alternative.py` | File output focused | Long meetings, logs |
-| `voice_system_audio.py` | System + Mic capture | Presentations, interviews |
-| `simple_transcriber.py` | Minimal dependencies | Quick setup |
-| `background_music_transcriber.py` | Background Music integration | Per-app volume control |
-| `sox_transcriber.py` | Command-line based | When Python audio fails |
+| `voice.py` | Audio transcription tool | Real-time transcription, auto-device detection, multiple output formats |
 
 ## Advanced Options
 
@@ -152,9 +140,6 @@ uv run voice.py --model medium   # Important meetings
 
 **Solution**:
 ```bash
-# Grant microphone permission
-python3 audio_transcriber_fixed.py --request-permission
-
 # Check System Settings > Privacy & Security > Microphone
 # Add Terminal/iTerm to allowed apps
 ```
@@ -244,7 +229,7 @@ uv run voice.py --auto-device --output zoom_transcript.txt
 
 1. **Use file output**:
 ```bash
-uv run voice_alternative.py --output meeting_$(date +%Y%m%d_%H%M%S).txt
+uv run voice.py --output meeting_$(date +%Y%m%d_%H%M%S).txt
 ```
 
 2. **Optimize for stability**:
