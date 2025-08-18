@@ -48,7 +48,7 @@ import whisper
 
 class RealTimeTranscriber:
     def __init__(self, model_size="base", chunk_duration=5, device_index=None,
-                 beam_size=5, best_of=5, temperature=0.0):
+                 beam_size=5, best_of=5, temperature=0.0, auto_device=False):
         """
         Initialize the real-time transcriber.
         
@@ -59,6 +59,7 @@ class RealTimeTranscriber:
             beam_size (int): Beam search width for better accuracy (default: 5)
             best_of (int): Number of candidates to consider (default: 5)
             temperature (float): Sampling temperature, 0 for deterministic (default: 0.0)
+            auto_device (bool): Automatically find and use BlackHole 2ch device (default: False)
         """
         self.model_size = model_size
         self.chunk_duration = chunk_duration
@@ -66,6 +67,7 @@ class RealTimeTranscriber:
         self.beam_size = beam_size
         self.best_of = best_of
         self.temperature = temperature
+        self.auto_device = auto_device
         
         # Audio settings
         self.sample_rate = 16000  # Whisper expects 16kHz
@@ -92,6 +94,24 @@ class RealTimeTranscriber:
         # Initialize PyAudio
         self.audio = pyaudio.PyAudio()
         
+        # Auto-detect BlackHole 2ch if requested
+        if self.auto_device and self.device_index is None:
+            self.device_index = self.find_blackhole_device()
+            if self.device_index is not None:
+                print(f"Auto-detected BlackHole 2ch at device index: {self.device_index}", flush=True)
+            else:
+                print("Warning: BlackHole 2ch not found, using default audio device", flush=True)
+        
+    def find_blackhole_device(self):
+        """Find BlackHole 2ch device automatically."""
+        for i in range(self.audio.get_device_count()):
+            info = self.audio.get_device_info_by_index(i)
+            if info['maxInputChannels'] > 0:
+                # Look specifically for "BlackHole 2ch"
+                if "BlackHole 2ch" in info['name']:
+                    return i
+        return None
+    
     def list_audio_devices(self):
         """List available audio input devices."""
         print("\n=== Available Audio Input Devices ===", flush=True)
@@ -282,6 +302,11 @@ def main():
         default=0.0,
         help="Sampling temperature, 0 for deterministic (default: 0.0)"
     )
+    parser.add_argument(
+        "--auto-device",
+        action="store_true",
+        help="Automatically detect and use BlackHole 2ch device for system audio capture"
+    )
     
     args = parser.parse_args()
     
@@ -292,7 +317,8 @@ def main():
         device_index=args.device,
         beam_size=args.beam_size,
         best_of=args.best_of,
-        temperature=args.temperature
+        temperature=args.temperature,
+        auto_device=args.auto_device
     )
     
     if args.list_devices:
