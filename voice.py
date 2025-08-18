@@ -48,7 +48,7 @@ import whisper
 
 class RealTimeTranscriber:
     def __init__(self, model_size="base", chunk_duration=5, device_index=None,
-                 beam_size=5, best_of=5, temperature=0.0, auto_device=False):
+                 beam_size=5, best_of=5, temperature=0.0, auto_device=False, who="Guest"):
         """
         Initialize the real-time transcriber.
         
@@ -60,6 +60,7 @@ class RealTimeTranscriber:
             best_of (int): Number of candidates to consider (default: 5)
             temperature (float): Sampling temperature, 0 for deterministic (default: 0.0)
             auto_device (bool): Automatically find and use BlackHole 2ch device (default: False)
+            who (str): Speaker name to display in transcriptions (default: Guest)
         """
         self.model_size = model_size
         self.chunk_duration = chunk_duration
@@ -68,6 +69,7 @@ class RealTimeTranscriber:
         self.best_of = best_of
         self.temperature = temperature
         self.auto_device = auto_device
+        self.who = who
         
         # Audio settings
         self.sample_rate = 16000  # Whisper expects 16kHz
@@ -182,8 +184,8 @@ class RealTimeTranscriber:
                 text = result["text"].strip()
                 
                 if text:  # Only print non-empty transcriptions
-                    timestamp = datetime.now().strftime("%H:%M:%S")
-                    print(f"[{timestamp}] ({transcription_time:.1f}s): {text}", flush=True)
+                    timestamp = datetime.now().strftime("%H:%M")
+                    print(f"[{timestamp}] {self.who}: {text}", flush=True)
                 
             except queue.Empty:
                 continue
@@ -250,7 +252,7 @@ def main():
     )
     parser.add_argument(
         "--model", 
-        default="small",
+        default="medium",
         choices=["tiny", "base", "small", "medium", "large", "large-v2", "large-v3"],
         help="Whisper model size. Larger = better quality but slower (default: small)"
     )
@@ -271,18 +273,6 @@ def main():
         help="List available audio input devices and exit"
     )
     parser.add_argument(
-        "--beam-size",
-        type=int,
-        default=5,
-        help="Beam search width for better accuracy (default: 5, set to 1 for faster but less accurate)"
-    )
-    parser.add_argument(
-        "--best-of",
-        type=int,
-        default=5,
-        help="Number of candidates to consider (default: 5)"
-    )
-    parser.add_argument(
         "--temperature",
         type=float,
         default=0.0,
@@ -293,18 +283,26 @@ def main():
         action="store_true",
         help="Automatically detect and use BlackHole 2ch device for system audio capture"
     )
+    parser.add_argument(
+        "--who",
+        type=str,
+        default="Guest",
+        help="Speaker name to display in transcriptions (default: Guest, use 'Me' for yourself)"
+    )
     
     args = parser.parse_args()
+    bestQuality = 5
     
     # Create transcriber
     transcriber = RealTimeTranscriber(
         model_size=args.model,
         chunk_duration=args.duration,
         device_index=args.device,
-        beam_size=args.beam_size,
-        best_of=args.best_of,
+        beam_size=bestQuality,
+        best_of=bestQuality,
         temperature=args.temperature,
-        auto_device=args.auto_device
+        auto_device=args.auto_device,
+        who=args.who
     )
     
     if args.list_devices:
