@@ -80,8 +80,6 @@ class RealTimeTranscriber:
         self.running = False
         
         # Load Whisper model
-        print(f"Loading Whisper model '{model_size}'...", flush=True)
-        
         # Create SSL context that doesn't verify certificates (for model download)
         try:
             ssl._create_default_https_context = ssl._create_unverified_context
@@ -89,7 +87,6 @@ class RealTimeTranscriber:
             pass
             
         self.model = whisper.load_model(model_size)
-        print("Model loaded successfully!", flush=True)
         
         # Initialize PyAudio
         self.audio = pyaudio.PyAudio()
@@ -97,10 +94,6 @@ class RealTimeTranscriber:
         # Auto-detect BlackHole 2ch if requested
         if self.auto_device and self.device_index is None:
             self.device_index = self.find_blackhole_device()
-            if self.device_index is not None:
-                print(f"Auto-detected BlackHole 2ch at device index: {self.device_index}", flush=True)
-            else:
-                print("Warning: BlackHole 2ch not found, using default audio device", flush=True)
         
     def find_blackhole_device(self):
         """Find BlackHole 2ch device automatically."""
@@ -199,13 +192,6 @@ class RealTimeTranscriber:
     
     def start_transcription(self):
         """Start real-time transcription."""
-        print(f"\nStarting real-time transcription...", flush=True)
-        print(f"Model: {self.model_size} (larger models = better quality)", flush=True)
-        print(f"Language: English only", flush=True)
-        print(f"Sample rate: {self.sample_rate} Hz", flush=True)
-        print(f"Chunk duration: {self.chunk_duration} seconds", flush=True)
-        print(f"Beam size: {self.beam_size} (higher = better accuracy but slower)", flush=True)
-        print(f"Press Ctrl+C to stop\n", flush=True)
         
         # Start audio stream
         try:
