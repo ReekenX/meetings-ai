@@ -33,7 +33,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 To capture system audio (required for Zoom/Teams/etc.), you need a virtual audio device:
 
-#### Option 1: BlackHole (Recommended - Free)
+#### BlackHole Setup (Free)
 
 ```bash
 # Install BlackHole
@@ -48,15 +48,6 @@ brew install blackhole-2ch
 # 4. Set Multi-Output Device as system output
 ```
 
-#### Option 2: Background Music (Free with Volume Control)
-
-```bash
-# Install Background Music
-brew install --cask background-music
-
-# It automatically configures audio routing
-# Bonus: Per-app volume control
-```
 
 ## Usage
 
@@ -266,7 +257,6 @@ MIT License - Use freely for personal and commercial purposes.
 
 - [OpenAI Whisper](https://github.com/openai/whisper) for transcription models
 - [BlackHole](https://github.com/ExistentialAudio/BlackHole) for virtual audio
-- [Background Music](https://github.com/kyleneideck/BackgroundMusic) for audio routing
 
 ---
 
