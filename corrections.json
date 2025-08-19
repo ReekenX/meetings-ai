@@ -1,4 +1,25 @@
 {
   "Remis": ["remus", "Remus", "ramis", "Ramis", "remiss", "Remiss", "ramus", "Ramus"],
-  "Granola": ["granola", "Granola", "grenola", "Grenola", "granolla", "Granolla"]
+  "Cristina": ["christina", "Christina", "cristina", "Cristina", "christine", "Christine"],
+  "Ashok": ["ashok", "Ashok", "a shock", "A shock", "ashot", "Ashot"],
+  "Lumenalta": ["lumenalta", "Lumenalta", "lumen alta", "Lumen Alta", "luminalta", "Luminalta"],
+  "Jira": ["jura", "Jura", "gira", "Gira", "jeera", "Jeera"],
+  "Cursor": ["curser", "Curser", "courser", "Courser"],
+  "JetBrains": ["jetbrains", "Jetbrains", "jetrail", "JetRail", "jet brains", "Jet Brains"],
+  "Copilot": ["co-pilot", "Co-pilot", "co pilot", "Co pilot", "copilot"],
+  "AAA": ["aaa", "triple a", "Triple A", "triple-a", "Triple-A"],
+  "CLI": ["c l i", "C L I", "see el eye", "See El Eye"],
+  "UI": ["u i", "U I", "you eye", "You Eye"],
+  "CSV": ["c s v", "C S V", "see ess vee", "See Ess Vee"],
+  "SQL": ["sequel", "Sequel", "s q l", "S Q L"],
+  "Acceptance Criteria": ["acs", "Acs", "a c s", "A C S", "aces", "Aces"],
+  "MVP": ["m v p", "M V P", "em vee pee", "Em Vee Pee"],
+  "SSO": ["s s o", "S S O", "ess ess oh", "Ess Ess Oh"],
+  "Okta": ["octa", "Octa", "okta"],
+  "API": ["a p i", "A P I", "ay pee eye", "Ay Pee Eye"],
+  "MD": ["m d", "M D", "em dee", "Em Dee"],
+  "Junie": ["junie", "Junie", "juni", "Juni", "joonie", "Joonie"],
+  "Databricks": ["databricks", "Databricks", "data bricks", "Data Bricks"],
+  "GitHub": ["github", "Github", "git hub", "Git Hub"],
+  "Klein": ["klein", "Klein", "cline", "Cline", "kline", "Kline"]
 }
