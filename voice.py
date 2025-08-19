@@ -48,8 +48,7 @@ import whisper
 
 class RealTimeTranscriber:
     def __init__(self, model_size="base", chunk_duration=5, device_index=None,
-                 beam_size=5, best_of=5, temperature=0.0, auto_device=False, who="Guest",
-                 custom_words=None):
+                 beam_size=5, best_of=5, temperature=0.0, auto_device=False, who="Guest"):
         """
         Initialize the real-time transcriber.
         
@@ -71,7 +70,19 @@ class RealTimeTranscriber:
         self.temperature = temperature
         self.auto_device = auto_device
         self.who = who
-        self.custom_words = custom_words or {}
+        
+        # Load corrections from file if it exists
+        import json
+        from pathlib import Path
+        corrections_file = Path("corrections.json")
+        if corrections_file.exists():
+            try:
+                with open(corrections_file, 'r') as f:
+                    self.custom_words = json.load(f)
+            except Exception:
+                self.custom_words = {}
+        else:
+            self.custom_words = {}
         
         # Audio settings
         self.sample_rate = 16000  # Whisper expects 16kHz
@@ -271,7 +282,7 @@ def main():
     )
     parser.add_argument(
         "--model", 
-        default="medium",
+        default="small",
         choices=["tiny", "base", "small", "medium", "large", "large-v2", "large-v3"],
         help="Whisper model size. Larger = better quality but slower (default: small)"
     )
@@ -308,30 +319,9 @@ def main():
         default="Guest",
         help="Speaker name to display in transcriptions (default: Guest, use 'Me' for yourself)"
     )
-    parser.add_argument(
-        "--custom-words",
-        type=str,
-        help="JSON file with custom word mappings (e.g., {'Remis': ['remus', 'ramis', 'remiss']})"
-    )
     
     args = parser.parse_args()
-    bestQuality = 5
-    
-    # Load custom words if provided
-    custom_words = None
-    if args.custom_words:
-        import json
-        try:
-            with open(args.custom_words, 'r') as f:
-                custom_words = json.load(f)
-        except Exception as e:
-            print(f"Warning: Could not load custom words file: {e}")
-    
-    # Default custom words for common name corrections
-    if not custom_words:
-        custom_words = {
-            "Remis": ["remus", "Remus", "ramis", "Ramis", "remiss", "Remiss", "ramus", "Ramus"]
-        }
+    bestQuality = 3
     
     # Create transcriber
     transcriber = RealTimeTranscriber(
@@ -342,8 +332,7 @@ def main():
         best_of=bestQuality,
         temperature=args.temperature,
         auto_device=args.auto_device,
-        who=args.who,
-        custom_words=custom_words
+        who=args.who
     )
     
     if args.list_devices:
