@@ -211,6 +211,32 @@ class RealTimeTranscriber:
     def start_transcription(self):
         """Start real-time transcription."""
         
+        # Print meeting header
+        header = """# [TITLE TODO]
+
+## Goal
+
+[ONE SENTENCES GOAL TODO]
+
+## Participants
+
+[PARTICIPANTS TODO]
+
+## Summary
+
+[SUMMARY GROUP TODO]
+- [SUMMARY ITEM TODO]
+- [SUMMARY ITEM TODO]
+
+[ANOTHER GROUP TODO]
+- [ANOTHER ITEM TODO]
+- [ANOTHER ITEM TODO]
+
+## Transcript
+
+```"""
+        print(header, flush=True)
+        
         # Start audio stream
         try:
             stream = self.audio.open(

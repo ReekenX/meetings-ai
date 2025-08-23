@@ -6,9 +6,8 @@ When the user wants to start a new meeting recording:
 
 1. Run the following command in the background:
    ```bash
-   cat header.md > [NAME];
    tmux send-keys -t meeting:transcript "tail -f [NAME]" C-m;
-   uv run record.py --auto-device | tee -a [NAME]
+   uv run record.py --auto-device | tee [NAME]
    ```
    Where `[NAME]` is the file path provided by the user (e.g., `meetings/group/2025-08-22-meeting-title.md`)
 
