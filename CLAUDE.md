@@ -10,7 +10,7 @@ When the user wants to start a new meeting recording:
    tmux send-keys -t meeting:transcript "tail -f [NAME]" C-m;
    uv run record.py --auto-device | tee -a [NAME]
    ```
-   Where `[NAME]` is the file path provided by the user (e.g., `meetings/lumenalta/2025-08-22-meeting-title.md`)
+   Where `[NAME]` is the file path provided by the user (e.g., `meetings/group/2025-08-22-meeting-title.md`)
 
 2. Keep this command running until the user tells you to stop
 
@@ -23,7 +23,7 @@ When the user says to stop:
 
 After stopping the recording:
 
-1. Review the generated file (e.g., `meetings/lumenalta/2025-08-22-meeting-title.md`)
+1. Review the generated file (e.g., `meetings/group/2025-08-22-meeting-title.md`)
 2. Update all `[TODO]` placeholders in the file:
    - Summary
    - Goal
