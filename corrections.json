@@ -17,9 +17,8 @@
   "SSO": ["s s o", "S S O", "ess ess oh", "Ess Ess Oh"],
   "Okta": ["octa", "Octa", "okta"],
   "API": ["a p i", "A P I", "ay pee eye", "Ay Pee Eye"],
-  "MD": ["m d", "M D", "em dee", "Em Dee"],
   "Junie": ["junie", "Junie", "juni", "Juni", "joonie", "Joonie"],
   "Databricks": ["databricks", "Databricks", "data bricks", "Data Bricks"],
   "GitHub": ["github", "Github", "git hub", "Git Hub"],
-  "Klein": ["klein", "Klein", "cline", "Cline", "kline", "Kline"]
+  "Cline": ["klein", "Klein", "cline", "Cline", "kline", "Kline"]
 }
