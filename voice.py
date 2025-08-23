@@ -319,17 +319,28 @@ def main():
         default="Guest",
         help="Speaker name to display in transcriptions (default: Guest, use 'Me' for yourself)"
     )
+    parser.add_argument(
+        "--beam-size",
+        type=int,
+        default=5,
+        help="Beam search width for better accuracy (default: 5)"
+    )
+    parser.add_argument(
+        "--best-of",
+        type=int,
+        default=5,
+        help="Number of candidates to consider (default: 5)"
+    )
     
     args = parser.parse_args()
-    bestQuality = 3
     
     # Create transcriber
     transcriber = RealTimeTranscriber(
         model_size=args.model,
         chunk_duration=args.duration,
         device_index=args.device,
-        beam_size=bestQuality,
-        best_of=bestQuality,
+        beam_size=args.beam_size,
+        best_of=args.best_of,
         temperature=args.temperature,
         auto_device=args.auto_device,
         who=args.who
