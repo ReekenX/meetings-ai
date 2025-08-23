@@ -1,11 +1,11 @@
 # Audio Transcription Suite for macOS
 
-Real-time audio transcription tools for capturing and transcribing system audio (Zoom meetings, etc.) and microphone input on macOS.
+Real-time audio transcription tools for capturing and transcribing system audio (Zoom meetings, etc.).
 
 ## Features
 
 - 🎙️ **Real-time transcription** using OpenAI Whisper
-- 🔊 **System audio capture** (Zoom, Teams, Discord, etc.)
+- 🔊 **System audio capture** (Zoom, Teams, Google Hangout, etc.)
 - 📝 **Multiple output formats** (console, text file)
 - 🚀 **Auto-device detection** for virtual audio devices
 - 💻 **No cloud dependencies** - runs entirely locally
@@ -72,18 +72,11 @@ uv run voice.py --list-devices  # Find BlackHole device number
 uv run voice.py --device <number>
 ```
 
-### 3. File Output
-
-```bash
-# Transcribe to file instead of console
-uv run voice.py --output transcript.txt
-```
-
 ## Main Script
 
 | Script | Purpose | Features |
 |--------|---------|----------|
-| `voice.py` | Audio transcription tool | Real-time transcription, auto-device detection, multiple output formats |
+| `voice.py` | Audio transcription tool | Real-time transcription, auto-device detection |
 
 ## Advanced Options
 
@@ -110,12 +103,9 @@ uv run voice.py --beam-size 10 --best-of 10
 uv run voice.py --duration 3  # Process every 3 seconds
 ```
 
-### Output Configuration
+### Model Configuration
 
 ```bash
-# Custom output file
-uv run voice_alternative.py --output meeting_notes.txt
-
 # Different models for different scenarios
 uv run voice.py --model tiny     # Quick notes
 uv run voice.py --model medium   # Important meetings
@@ -213,17 +203,12 @@ uv run voice.py --auto-device --model base
 
 3. **Start transcription**:
 ```bash
-uv run voice.py --auto-device --output zoom_transcript.txt
+uv run voice.py --auto-device
 ```
 
 ### For Long Sessions
 
-1. **Use file output**:
-```bash
-uv run voice.py --output meeting_$(date +%Y%m%d_%H%M%S).txt
-```
-
-2. **Optimize for stability**:
+1. **Optimize for stability**:
 ```bash
 # Smaller chunks, stable model
 uv run voice.py --duration 3 --model base --temperature 0.0
