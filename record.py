@@ -4,7 +4,7 @@ Real-time Audio Transcriber using Whisper
 A single-file script that captures microphone or system audio and transcribes it in real-time.
 
 Requirements: uv (https://github.com/astral-sh/uv)
-Usage: uv run voice.py
+Usage: uv run record.py
 
 To capture SYSTEM AUDIO (instead of microphone):
 1. Install BlackHole (virtual audio device):
@@ -17,8 +17,8 @@ To capture SYSTEM AUDIO (instead of microphone):
    - Set this Multi-Output Device as your system output
    
 3. Run the script and select BlackHole as input:
-   uv run voice.py --list-devices  # Find BlackHole device number
-   uv run voice.py --device <number>
+   uv run record.py --list-devices  # Find BlackHole device number
+   uv run record.py --device <number>
 
 # /// script
 # requires-python = ">=3.8,<3.13"

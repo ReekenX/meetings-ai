@@ -55,28 +55,28 @@ brew install blackhole-2ch
 
 ```bash
 # Using uv (recommended)
-uv run voice.py
+uv run record.py
 
 # Or with Python directly
-python3 voice.py
+python3 record.py
 ```
 
 ### 2. System Audio Transcription (Zoom/Teams)
 
 ```bash
 # Auto-detect BlackHole device
-uv run voice.py --auto-device
+uv run record.py --auto-device
 
 # Or manually specify device
-uv run voice.py --list-devices  # Find BlackHole device number
-uv run voice.py --device <number>
+uv run record.py --list-devices  # Find BlackHole device number
+uv run record.py --device <number>
 ```
 
 ## Main Script
 
 | Script | Purpose | Features |
 |--------|---------|----------|
-| `voice.py` | Audio transcription tool | Real-time transcription, auto-device detection |
+| `record.py` | Audio transcription tool | Real-time transcription, auto-device detection |
 
 ## Advanced Options
 
@@ -84,7 +84,7 @@ uv run voice.py --device <number>
 
 ```bash
 # Larger models = better accuracy (but slower)
-uv run voice.py --model large --auto-device
+uv run record.py --model large --auto-device
 
 # Available models: tiny, base, small, medium, large
 # Recommended: base (balanced) or small (quality)
@@ -94,21 +94,21 @@ uv run voice.py --model large --auto-device
 
 ```bash
 # Faster processing (lower quality)
-uv run voice.py --beam-size 1 --best-of 1
+uv run record.py --beam-size 1 --best-of 1
 
 # Higher quality (slower)
-uv run voice.py --beam-size 10 --best-of 10
+uv run record.py --beam-size 10 --best-of 10
 
 # Adjust chunk duration
-uv run voice.py --duration 3  # Process every 3 seconds
+uv run record.py --duration 3  # Process every 3 seconds
 ```
 
 ### Model Configuration
 
 ```bash
 # Different models for different scenarios
-uv run voice.py --model tiny     # Quick notes
-uv run voice.py --model medium   # Important meetings
+uv run record.py --model tiny     # Quick notes
+uv run record.py --model medium   # Important meetings
 ```
 
 ## Troubleshooting
@@ -132,10 +132,10 @@ uv run voice.py --model medium   # Important meetings
 **Solution**:
 ```bash
 # List all devices
-uv run voice.py --list-devices
+uv run record.py --list-devices
 
 # Use auto-detection
-uv run voice.py --auto-device
+uv run record.py --auto-device
 
 # Check Audio MIDI Setup configuration
 open /Applications/Utilities/Audio\ MIDI\ Setup.app
@@ -148,10 +148,10 @@ open /Applications/Utilities/Audio\ MIDI\ Setup.app
 **Solution**:
 ```bash
 # Use larger model
-uv run voice.py --model medium --auto-device
+uv run record.py --model medium --auto-device
 
 # Adjust audio processing
-uv run voice.py --beam-size 10 --temperature 0.0
+uv run record.py --beam-size 10 --temperature 0.0
 ```
 
 #### 4. Installation Issues
@@ -166,26 +166,6 @@ brew install portaudio
 pip3 install --global-option='build_ext' --global-option='-I/opt/homebrew/include' --global-option='-L/opt/homebrew/lib' pyaudio
 ```
 
-### Platform-Specific Notes
-
-#### Apple Silicon (M1/M2/M3)
-
-```bash
-# Ensure using ARM64 Python
-which python3  # Should show /opt/homebrew/bin/python3
-
-# Install Rosetta if needed for some dependencies
-softwareupdate --install-rosetta
-```
-
-#### Intel Macs
-
-```bash
-# Standard installation works
-brew install python@3.11
-pip3 install openai-whisper pyaudio numpy
-```
-
 ## Best Practices
 
 ### For Zoom Meetings
@@ -193,8 +173,8 @@ pip3 install openai-whisper pyaudio numpy
 1. **Setup before meeting**:
 ```bash
 # Test audio capture
-uv run voice.py --list-devices
-uv run voice.py --auto-device --model base
+uv run record.py --list-devices
+uv run record.py --auto-device --model base
 ```
 
 2. **Configure Zoom audio**:
@@ -203,7 +183,7 @@ uv run voice.py --auto-device --model base
 
 3. **Start transcription**:
 ```bash
-uv run voice.py --auto-device
+uv run record.py --auto-device
 ```
 
 ### For Long Sessions
@@ -211,7 +191,7 @@ uv run voice.py --auto-device
 1. **Optimize for stability**:
 ```bash
 # Smaller chunks, stable model
-uv run voice.py --duration 3 --model base --temperature 0.0
+uv run record.py --duration 3 --model base --temperature 0.0
 ```
 
 ### For Privacy
