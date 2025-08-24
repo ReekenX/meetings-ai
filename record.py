@@ -48,7 +48,7 @@ import whisper
 
 class RealTimeTranscriber:
     def __init__(self, model_size="base", chunk_duration=5, device_index=None,
-                 beam_size=5, best_of=5, temperature=0.0, auto_device=False, who="Guest"):
+                 beam_size=5, best_of=5, temperature=0.0, auto_device=False, who="Guest", no_header=False):
         """
         Initialize the real-time transcriber.
         
@@ -61,6 +61,7 @@ class RealTimeTranscriber:
             temperature (float): Sampling temperature, 0 for deterministic (default: 0.0)
             auto_device (bool): Automatically find and use BlackHole 2ch device (default: False)
             who (str): Speaker name to display in transcriptions (default: Guest)
+            no_header (bool): Skip printing the meeting header (default: False)
         """
         self.model_size = model_size
         self.chunk_duration = chunk_duration
@@ -70,6 +71,7 @@ class RealTimeTranscriber:
         self.temperature = temperature
         self.auto_device = auto_device
         self.who = who
+        self.no_header = no_header
         
         # Load corrections from file if it exists
         import json
@@ -211,31 +213,9 @@ class RealTimeTranscriber:
     def start_transcription(self):
         """Start real-time transcription."""
         
-        # Print meeting header
-        header = """# [TITLE TODO]
-
-## Goal
-
-[ONE SENTENCES GOAL TODO]
-
-## Participants
-
-[PARTICIPANTS TODO]
-
-## Summary
-
-[SUMMARY GROUP TODO]
-- [SUMMARY ITEM TODO]
-- [SUMMARY ITEM TODO]
-
-[ANOTHER GROUP TODO]
-- [ANOTHER ITEM TODO]
-- [ANOTHER ITEM TODO]
-
-## Transcript
-
-```"""
-        print(header, flush=True)
+        # Print meeting header unless disabled
+        if not self.no_header:
+            self.print_meeting_header()
         
         # Start audio stream
         try:
@@ -281,6 +261,33 @@ class RealTimeTranscriber:
         transcription_thread.join(timeout=1.0)
         
         print("Transcription stopped.", flush=True)
+    
+    def print_meeting_header(self):
+        """Print the meeting header template."""
+        header = """# [TITLE TODO]
+
+## Goal
+
+[ONE SENTENCES GOAL TODO]
+
+## Participants
+
+[PARTICIPANTS TODO]
+
+## Summary
+
+[SUMMARY GROUP TODO]
+- [SUMMARY ITEM TODO]
+- [SUMMARY ITEM TODO]
+
+[ANOTHER GROUP TODO]
+- [ANOTHER ITEM TODO]
+- [ANOTHER ITEM TODO]
+
+## Transcript
+
+```"""
+        print(header, flush=True)
     
     def apply_custom_words(self, text):
         """Apply custom word replacements for better name recognition."""
@@ -357,6 +364,11 @@ def main():
         default=5,
         help="Number of candidates to consider (default: 5)"
     )
+    parser.add_argument(
+        "--no-header",
+        action="store_true",
+        help="Skip printing the meeting header template"
+    )
     
     args = parser.parse_args()
     
@@ -369,7 +381,8 @@ def main():
         best_of=args.best_of,
         temperature=args.temperature,
         auto_device=args.auto_device,
-        who=args.who
+        who=args.who,
+        no_header=args.no_header
     )
     
     if args.list_devices:
