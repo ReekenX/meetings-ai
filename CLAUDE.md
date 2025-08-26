@@ -5,10 +5,12 @@
 When the user wants to start a new meeting recording:
 
 1. Run the following command in the background:
+
    ```bash
    tmux send-keys -t meeting:transcript "tail -f [NAME]" C-m;
-   uv run record.py --auto-device | tee [NAME]
+   uv run record.py --beam-size 1 --best-of 1 --auto-device | tee [NAME]
    ```
+
    Where `[NAME]` is the file path provided by the user (e.g., `meetings/group/2025-08-22-meeting-title.md`)
 
 2. Keep this command running until the user tells you to stop
@@ -16,6 +18,7 @@ When the user wants to start a new meeting recording:
 ## Stopping the Recording
 
 When the user says to stop:
+
 - Kill the background process running the recording command
 
 ## Post-Recording Tasks
@@ -39,3 +42,4 @@ When the user asks questions about a meeting:
 2. Answer directly from the content of the meeting transcript
 3. **Do not use any external tools or internet search** - only use the information from the meeting file
 4. Reference specific parts of the transcript when answering
+
