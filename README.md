@@ -15,16 +15,19 @@ Real-time audio transcription tools for capturing and transcribing system audio 
 ### Prerequisites
 
 1. **Install Homebrew** (if not already installed):
+
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
 2. **Install Python 3.8+**:
+
 ```bash
 brew install python@3.11
 ```
 
 3. **Install uv** (Python package manager):
+
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
@@ -47,7 +50,6 @@ brew install blackhole-2ch
 #    ✓ BlackHole 2ch (to capture audio)
 # 4. Set Multi-Output Device as system output
 ```
-
 
 ## Usage
 
@@ -120,6 +122,7 @@ uv run record.py --model medium   # Important meetings
 **Cause**: macOS security blocking audio access
 
 **Solution**:
+
 ```bash
 # Check System Settings > Privacy & Security > Microphone
 # Add Terminal/iTerm to allowed apps
@@ -130,6 +133,7 @@ uv run record.py --model medium   # Important meetings
 **Cause**: Wrong audio device selected
 
 **Solution**:
+
 ```bash
 # List all devices
 uv run record.py --list-devices
@@ -146,6 +150,7 @@ open /Applications/Utilities/Audio\ MIDI\ Setup.app
 **Cause**: Model too small or noisy audio
 
 **Solution**:
+
 ```bash
 # Use larger model
 uv run record.py --model medium --auto-device
@@ -171,6 +176,7 @@ pip3 install --global-option='build_ext' --global-option='-I/opt/homebrew/includ
 ### For Zoom Meetings
 
 1. **Setup before meeting**:
+
 ```bash
 # Test audio capture
 uv run record.py --list-devices
@@ -182,6 +188,7 @@ uv run record.py --auto-device --model base
    - Keep "Original Sound" OFF for better quality
 
 3. **Start transcription**:
+
 ```bash
 uv run record.py --auto-device
 ```
@@ -189,6 +196,7 @@ uv run record.py --auto-device
 ### For Long Sessions
 
 1. **Optimize for stability**:
+
 ```bash
 # Smaller chunks, stable model
 uv run record.py --duration 3 --model base --temperature 0.0
@@ -226,3 +234,10 @@ MIT License - Use freely for personal and commercial purposes.
 ---
 
 **Note**: For professional transcription needs, consider dedicated hardware solutions or cloud services for better accuracy and features.
+
+## Format Code
+
+```bash
+uv run black record.py
+```
+
