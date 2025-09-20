@@ -29,6 +29,7 @@ import json
 import numpy as np
 import pyaudio
 import whisper
+import torch
 
 
 class DualSourceTranscriber:
@@ -41,6 +42,9 @@ class DualSourceTranscriber:
         temperature=0.0,
         no_header=False,
         silence_timeout=300,
+        share_model=True,
+        use_fp16=False,
+        max_buffer_size=30,
     ):
         """
         Initialize the dual-source transcriber.
@@ -53,6 +57,9 @@ class DualSourceTranscriber:
             temperature (float): Sampling temperature, 0 for deterministic
             no_header (bool): Skip printing the meeting header
             silence_timeout (int): Time in seconds to wait before terminating due to silence (default: 300 = 5 minutes)
+            share_model (bool): Share single model between sources to save memory (default: True)
+            use_fp16 (bool): Use FP16 for inference to reduce memory (default: False)
+            max_buffer_size (int): Maximum audio buffer size in seconds to prevent memory overflow (default: 30)
         """
         self.model_size = model_size
         self.chunk_duration = chunk_duration
@@ -61,6 +68,9 @@ class DualSourceTranscriber:
         self.temperature = temperature
         self.no_header = no_header
         self.silence_timeout = silence_timeout
+        self.share_model = share_model
+        self.use_fp16 = use_fp16 and torch.cuda.is_available()
+        self.max_buffer_size = max_buffer_size
 
         # Load corrections from file if it exists
         corrections_file = Path("corrections.json")
@@ -93,6 +103,8 @@ class DualSourceTranscriber:
 
         # We'll load models when we know how many sources we have
         self.model_size_cached = model_size
+        self.shared_model = None
+        self.shared_model_lock = threading.Lock()
 
         # Initialize PyAudio
         self.audio = pyaudio.PyAudio()
@@ -112,23 +124,36 @@ class DualSourceTranscriber:
 
     def setup_audio_sources(self):
         """Setup audio sources for BlackHole and AirPods."""
+        # Load shared model if enabled
+        if self.share_model:
+            print(f"Loading shared Whisper model ({self.model_size_cached})...", flush=True)
+            self.shared_model = whisper.load_model(self.model_size_cached)
+            if self.use_fp16:
+                self.shared_model = self.shared_model.half()
+
         # Find BlackHole 2ch for Guest
         blackhole_idx, blackhole_name, blackhole_channels = self.find_device_by_name(
             ["blackhole 2ch"]
         )
         if blackhole_idx is not None:
-            print(f"Loading Whisper model for Guest...", flush=True)
-            model = whisper.load_model(self.model_size_cached)
+            if not self.share_model:
+                print(f"Loading Whisper model for Guest...", flush=True)
+                model = whisper.load_model(self.model_size_cached)
+                if self.use_fp16:
+                    model = model.half()
+            else:
+                model = self.shared_model
+
             self.sources.append(
                 {
                     "device_index": blackhole_idx,
                     "device_name": blackhole_name,
                     "channels": min(blackhole_channels, 2),  # Use up to 2 channels
                     "who": "Guest",
-                    "model": model,  # Dedicated model instance
-                    "model_lock": threading.Lock(),  # Lock for thread-safe model access
-                    "audio_queue": queue.Queue(),
-                    "transcription_queue": queue.Queue(),
+                    "model": model,
+                    "model_lock": self.shared_model_lock if self.share_model else threading.Lock(),
+                    "audio_queue": queue.Queue(maxsize=100),  # Limit queue size
+                    "transcription_queue": queue.Queue(maxsize=10),  # Limit queue size
                     "stream": None,
                     "audio_thread": None,
                     "transcription_thread": None,
@@ -149,18 +174,24 @@ class DualSourceTranscriber:
             ["airpods pro"]
         )
         if airpods_idx is not None:
-            print(f"Loading Whisper model for Me...", flush=True)
-            model = whisper.load_model(self.model_size_cached)
+            if not self.share_model:
+                print(f"Loading Whisper model for Me...", flush=True)
+                model = whisper.load_model(self.model_size_cached)
+                if self.use_fp16:
+                    model = model.half()
+            else:
+                model = self.shared_model
+
             self.sources.append(
                 {
                     "device_index": airpods_idx,
                     "device_name": airpods_name,
                     "channels": airpods_channels,  # Use actual channel count
                     "who": "Me",
-                    "model": model,  # Dedicated model instance
-                    "model_lock": threading.Lock(),  # Lock for thread-safe model access
-                    "audio_queue": queue.Queue(),
-                    "transcription_queue": queue.Queue(),
+                    "model": model,
+                    "model_lock": self.shared_model_lock if self.share_model else threading.Lock(),
+                    "audio_queue": queue.Queue(maxsize=100),  # Limit queue size
+                    "transcription_queue": queue.Queue(maxsize=10),  # Limit queue size
                     "stream": None,
                     "audio_thread": None,
                     "transcription_thread": None,
@@ -198,6 +229,10 @@ class DualSourceTranscriber:
             # Convert bytes to numpy array
             audio_data = np.frombuffer(in_data, dtype=np.float32)
 
+            # Drop frames if queue is full (prevent memory buildup)
+            if self.sources[source_idx]["audio_queue"].full():
+                return (in_data, pyaudio.paContinue)
+
             # Convert to mono if multi-channel
             channels = self.sources[source_idx]["channels"]
             if channels > 1:
@@ -205,7 +240,10 @@ class DualSourceTranscriber:
                 audio_data = audio_data.reshape(-1, channels)
                 audio_data = np.mean(audio_data, axis=1)
 
-            self.sources[source_idx]["audio_queue"].put(audio_data.copy())
+            try:
+                self.sources[source_idx]["audio_queue"].put_nowait(audio_data.copy())
+            except queue.Full:
+                pass  # Drop frame if queue is full
 
             return (in_data, pyaudio.paContinue)
 
@@ -216,12 +254,17 @@ class DualSourceTranscriber:
         source = self.sources[source_idx]
         audio_buffer = np.array([], dtype=np.float32)
         chunk_samples = int(self.sample_rate * self.chunk_duration)  # Ensure integer
+        max_buffer_samples = int(self.sample_rate * self.max_buffer_size)
 
         while self.running:
             try:
                 # Get audio data from queue
                 audio_chunk = source["audio_queue"].get(timeout=0.1)
                 audio_buffer = np.append(audio_buffer, audio_chunk)
+
+                # Prevent buffer overflow
+                if len(audio_buffer) > max_buffer_samples:
+                    audio_buffer = audio_buffer[-max_buffer_samples:]
 
                 # Process when we have enough audio
                 if len(audio_buffer) >= chunk_samples:
@@ -237,8 +280,11 @@ class DualSourceTranscriber:
                         )
                         continue
 
-                    # Queue for transcription
-                    source["transcription_queue"].put(to_process)
+                    # Queue for transcription (drop if full)
+                    try:
+                        source["transcription_queue"].put_nowait(to_process)
+                    except queue.Full:
+                        pass  # Drop oldest chunks if queue is full
 
             except queue.Empty:
                 continue
@@ -269,28 +315,44 @@ class DualSourceTranscriber:
                 # Check if audio contains actual sound (not just silence)
                 # Calculate RMS (root mean square) to detect silence
                 rms = np.sqrt(np.mean(audio_chunk**2))
-                if rms < 0.002:  # Increased threshold for better silence detection
+                if rms < 0.003:  # Slightly higher threshold to skip more silence
                     continue  # Skip silent chunks
 
                 # Additional check: if audio is too uniform (likely silence or noise)
                 audio_std = np.std(audio_chunk)
-                if audio_std < 0.001:
+                if audio_std < 0.002:  # Higher threshold to filter more aggressively
                     continue
 
                 # Transcribe with source-specific Whisper model (with lock for thread safety)
                 with source["model_lock"]:
-                    result = source["model"].transcribe(
-                        audio_chunk,
-                        fp16=False,
-                        language="en",
-                        task="transcribe",
-                        beam_size=self.beam_size,
-                        best_of=self.best_of,
-                        temperature=self.temperature,
-                        compression_ratio_threshold=2.4,
-                        no_speech_threshold=0.6,
-                        condition_on_previous_text=False,
-                    )
+                    # Suppress all output including progress bars
+                    import os
+                    import sys
+                    devnull = open(os.devnull, 'w')
+                    old_stdout = sys.stdout
+                    old_stderr = sys.stderr
+                    sys.stdout = devnull
+                    sys.stderr = devnull
+
+                    try:
+                        result = source["model"].transcribe(
+                            audio_chunk,
+                            fp16=self.use_fp16,
+                            language="en",
+                            task="transcribe",
+                            beam_size=self.beam_size,
+                            best_of=self.best_of,
+                            temperature=self.temperature,
+                            compression_ratio_threshold=2.4,
+                            no_speech_threshold=0.7,  # Higher threshold to filter more aggressively
+                            condition_on_previous_text=False,
+                            verbose=False,  # Disable verbose output
+                            logprob_threshold=-1.0,  # Disable word-level timestamps
+                        )
+                    finally:
+                        sys.stdout = old_stdout
+                        sys.stderr = old_stderr
+                        devnull.close()
 
                 text = result["text"].strip()
 
@@ -539,6 +601,29 @@ def main():
         default=300,
         help="Time in seconds to wait before terminating due to silence (default: 300 = 5 minutes, 0 to disable)",
     )
+    parser.add_argument(
+        "--share-model",
+        action="store_true",
+        default=True,
+        help="Share single model between sources to save memory (default: True)",
+    )
+    parser.add_argument(
+        "--no-share-model",
+        dest="share_model",
+        action="store_false",
+        help="Use separate models for each source (uses more memory)",
+    )
+    parser.add_argument(
+        "--fp16",
+        action="store_true",
+        help="Use FP16 for inference (requires CUDA, reduces memory usage)",
+    )
+    parser.add_argument(
+        "--max-buffer",
+        type=int,
+        default=30,
+        help="Maximum audio buffer size in seconds (default: 30)",
+    )
 
     args = parser.parse_args()
 
@@ -551,6 +636,9 @@ def main():
         temperature=args.temperature,
         no_header=args.no_header,
         silence_timeout=args.silence_timeout,
+        share_model=args.share_model,
+        use_fp16=args.fp16,
+        max_buffer_size=args.max_buffer,
     )
 
     # Start transcription
