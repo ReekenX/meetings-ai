@@ -40,7 +40,6 @@ class DualSourceTranscriber:
         beam_size=1,
         best_of=1,
         temperature=0.0,
-        no_header=False,
         silence_timeout=300,
         share_model=True,
         use_fp16=False,
@@ -55,7 +54,6 @@ class DualSourceTranscriber:
             beam_size (int): Beam search width for better accuracy
             best_of (int): Number of candidates to consider
             temperature (float): Sampling temperature, 0 for deterministic
-            no_header (bool): Skip printing the meeting header
             silence_timeout (int): Time in seconds to wait before terminating due to silence (default: 300 = 5 minutes)
             share_model (bool): Share single model between sources to save memory (default: True)
             use_fp16 (bool): Use FP16 for inference to reduce memory (default: False)
@@ -66,7 +64,6 @@ class DualSourceTranscriber:
         self.beam_size = beam_size
         self.best_of = best_of
         self.temperature = temperature
-        self.no_header = no_header
         self.silence_timeout = silence_timeout
         self.share_model = share_model
         self.use_fp16 = use_fp16 and torch.cuda.is_available()
@@ -433,39 +430,8 @@ class DualSourceTranscriber:
 
         return text
 
-    def print_meeting_header(self):
-        """Print the meeting header template."""
-        header = """# [TITLE TODO]
-
-## Goal
-
-[ONE SENTENCES GOAL TODO]
-
-## Participants
-
-[PARTICIPANTS TODO]
-
-## Summary
-
-[SUMMARY GROUP TODO]
-- [SUMMARY ITEM TODO]
-- [SUMMARY ITEM TODO]
-
-[ANOTHER GROUP TODO]
-- [ANOTHER ITEM TODO]
-- [ANOTHER ITEM TODO]
-
-## Transcript
-
-```"""
-        print(header, flush=True)
-
     def start_transcription(self):
         """Start dual-source transcription."""
-
-        # Print meeting header unless disabled
-        if not self.no_header:
-            self.print_meeting_header()
 
         print(f"\nStarting dual-source transcription...", flush=True)
         print(f"Listening to {len(self.sources)} audio source(s):", flush=True)
@@ -634,7 +600,6 @@ def main():
         beam_size=args.beam_size,
         best_of=args.best_of,
         temperature=args.temperature,
-        no_header=args.no_header,
         silence_timeout=args.silence_timeout,
         share_model=args.share_model,
         use_fp16=args.fp16,
