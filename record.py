@@ -123,7 +123,7 @@ class DualSourceTranscriber:
         """Setup audio sources for BlackHole and AirPods."""
         # Load shared model if enabled
         if self.share_model:
-            print(f"Loading shared Whisper model ({self.model_size_cached})...", flush=True)
+            print(f"Loading shared Whisper model ({self.model_size_cached})...", file=sys.stderr, flush=True)
             self.shared_model = whisper.load_model(self.model_size_cached)
             if self.use_fp16:
                 self.shared_model = self.shared_model.half()
@@ -134,7 +134,7 @@ class DualSourceTranscriber:
         )
         if blackhole_idx is not None:
             if not self.share_model:
-                print(f"Loading Whisper model for Guest...", flush=True)
+                print(f"Loading Whisper model for Guest...", file=sys.stderr, flush=True)
                 model = whisper.load_model(self.model_size_cached)
                 if self.use_fp16:
                     model = model.half()
@@ -158,11 +158,13 @@ class DualSourceTranscriber:
             )
             print(
                 f"✓ Found BlackHole 2ch (device {blackhole_idx}, {blackhole_channels} channels) for Guest transcription",
+                file=sys.stderr,
                 flush=True,
             )
         else:
             print(
                 "⚠ BlackHole 2ch not found - Guest audio will not be captured",
+                file=sys.stderr,
                 flush=True,
             )
 
@@ -172,7 +174,7 @@ class DualSourceTranscriber:
         )
         if airpods_idx is not None:
             if not self.share_model:
-                print(f"Loading Whisper model for Me...", flush=True)
+                print(f"Loading Whisper model for Me...", file=sys.stderr, flush=True)
                 model = whisper.load_model(self.model_size_cached)
                 if self.use_fp16:
                     model = model.half()
@@ -196,21 +198,24 @@ class DualSourceTranscriber:
             )
             print(
                 f"✓ Found AirPods Pro II (device {airpods_idx}, {airpods_channels} channel) for Me transcription",
+                file=sys.stderr,
                 flush=True,
             )
         else:
             print(
                 "⚠ AirPods Pro II not found - Your audio will not be captured",
+                file=sys.stderr,
                 flush=True,
             )
 
         if not self.sources:
-            print("\n❌ No audio devices found. Please ensure:", flush=True)
+            print("\n❌ No audio devices found. Please ensure:", file=sys.stderr, flush=True)
             print(
                 "   - BlackHole 2ch is installed and configured for system audio",
+                file=sys.stderr,
                 flush=True,
             )
-            print("   - AirPods Pro II are connected", flush=True)
+            print("   - AirPods Pro II are connected", file=sys.stderr, flush=True)
             sys.exit(1)
 
     def audio_callback(self, source_idx):
@@ -433,11 +438,11 @@ class DualSourceTranscriber:
     def start_transcription(self):
         """Start dual-source transcription."""
 
-        print(f"\nStarting dual-source transcription...", flush=True)
-        print(f"Listening to {len(self.sources)} audio source(s):", flush=True)
+        print(f"\nStarting dual-source transcription...", file=sys.stderr, flush=True)
+        print(f"Listening to {len(self.sources)} audio source(s):", file=sys.stderr, flush=True)
         for source in self.sources:
-            print(f"  - {source['who']}: {source['device_name']}", flush=True)
-        print("\nPress Ctrl+C to stop recording.\n", flush=True)
+            print(f"  - {source['who']}: {source['device_name']}", file=sys.stderr, flush=True)
+        print("\nPress Ctrl+C to stop recording.\n", file=sys.stderr, flush=True)
 
         # Start audio streams for each source
         for idx, source in enumerate(self.sources):
@@ -486,12 +491,13 @@ class DualSourceTranscriber:
                     if elapsed_silence > self.silence_timeout:
                         print(
                             f"\n\nNo speech detected for {self.silence_timeout} seconds. Stopping automatically...",
+                            file=sys.stderr,
                             flush=True,
                         )
                         break
                 time.sleep(0.1)
         except KeyboardInterrupt:
-            print("\n\nStopping transcription...", flush=True)
+            print("\n\nStopping transcription...", file=sys.stderr, flush=True)
 
         # Cleanup
         self.running = False
@@ -508,7 +514,7 @@ class DualSourceTranscriber:
             if source["transcription_thread"] is not None:
                 source["transcription_thread"].join(timeout=1.0)
 
-        print("Transcription stopped.", flush=True)
+        print("Transcription stopped.", file=sys.stderr, flush=True)
 
         # Exit with code 0 if stopped due to silence timeout
         if self.silence_timeout > 0:
