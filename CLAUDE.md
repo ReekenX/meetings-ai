@@ -8,7 +8,7 @@ When the user wants to start a new meeting recording:
 
    ```bash
    tmux send-keys -t meeting:transcript "tail -f [NAME]" C-m;
-   uv run record.py --beam-size 1 --best-of 1 | tee [NAME]
+   uv run record.py --model tiny --duration 5 --beam-size 1 --best-of 1 | tee [NAME]
    ```
 
    Where `[NAME]` is the file path provided by the user (e.g., `meetings/group/2025-08-22-meeting-title.md`)
