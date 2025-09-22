@@ -34,10 +34,11 @@ When this command is invoked:
 2. Construct the full file path: `meetings/[YYYY-MM-DD]-[SLUG].md`
 3. Run the following command in the background:
    ```bash
-   touch "meetings/[YYYY-MM-DD]-[SLUG].md";
-   echo "meetings/[YYYY-MM-DD]-[SLUG].md" > .current-meeting;
-   tmux send-keys -t meetings-ai:transcript "tail -f 'meetings/[YYYY-MM-DD]-[SLUG].md'" C-m;
-   uv run record.py --model tiny --duration 2 --fp16 | tee "meetings/[YYYY-MM-DD]-[SLUG].md"
+   date=$(date +%Y-%m-%d);
+   touch "meetings/$date-[SLUG].md";
+   echo "meetings/$date-[SLUG].md" > .current-meeting;
+   tmux send-keys -t meetings-ai:transcript "tail -f 'meetings/$date-[SLUG].md'" C-m;
+   uv run record.py --model tiny --duration 2 --fp16 | tee "meetings/$date-[SLUG].md"
    ```
 4. Store the background process ID for later stopping
 5. Inform the user that recording has started
