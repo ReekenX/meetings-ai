@@ -12,20 +12,28 @@ import os
 
 class MeetingRecorderApp(rumps.App):
     def __init__(self):
-        super().__init__("⚫")
+        super().__init__("Meeting Recorder")
         self.process = None
         self.recording = False
         self.blink_state = False
         self.blink_timer = None
+
+        # Set up icon paths
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.icon_active = os.path.join(script_dir, "icons", "active.png")
+        self.icon_inactive = os.path.join(script_dir, "icons", "inactive.png")
+
+        # Set initial icon
+        self.icon = self.icon_inactive
 
         # Create menu items
         self.record_button = rumps.MenuItem("Start Recording", callback=self.toggle_recording)
         self.menu = [self.record_button]
 
     def blink(self):
-        """Toggle between red and black circle"""
+        """Toggle between active and inactive icon"""
         if self.recording:
-            self.title = "🔴" if self.blink_state else "⚫"
+            self.icon = self.icon_active if self.blink_state else self.icon_inactive
             self.blink_state = not self.blink_state
             self.blink_timer = threading.Timer(1.0, self.blink)
             self.blink_timer.start()
@@ -77,7 +85,7 @@ class MeetingRecorderApp(rumps.App):
             finally:
                 self.process = None
 
-        self.title = "⚫"
+        self.icon = self.icon_inactive
         self.record_button.title = "Start Recording"
 
 if __name__ == "__main__":
