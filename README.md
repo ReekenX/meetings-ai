@@ -79,10 +79,10 @@ uv run record.py --model medium --duration 5 --silence-timeout 600
 Recordings are automatically saved to the `/meetings/` directory:
 
 ```
+.current-meeting  # Inside this file there is a path to most recent meeting in meetings/ folder
 meetings/
 ├── 2025-10-31-team-standup.md
 ├── 2025-10-31-client-demo.md
-└── .current-meeting  # Tracks the active/most recent meeting
 ```
 
 **Transcript Format:**
