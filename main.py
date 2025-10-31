@@ -10,6 +10,7 @@ import signal
 import threading
 import os
 import re
+import sys
 from datetime import datetime
 
 class MeetingRecorderApp(rumps.App):
@@ -19,6 +20,8 @@ class MeetingRecorderApp(rumps.App):
         self.recording = False
         self.blink_state = False
         self.blink_timer = None
+        self.output_thread = None
+        self.meeting_file = None
 
         # Set up icon paths
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +34,21 @@ class MeetingRecorderApp(rumps.App):
         # Create menu items
         self.record_button = rumps.MenuItem("Start Recording", callback=self.toggle_recording)
         self.menu = [self.record_button]
+
+    def output_reader(self):
+        """Read output from recording process and write to both stdout and file."""
+        if self.process and self.process.stdout:
+            for line in iter(self.process.stdout.readline, b''):
+                if not line:
+                    break
+                line_str = line.decode('utf-8')
+                # Print to stdout
+                sys.stdout.write(line_str)
+                sys.stdout.flush()
+                # Write to meeting file
+                if self.meeting_file:
+                    self.meeting_file.write(line_str)
+                    self.meeting_file.flush()
 
     def blink(self):
         """Toggle between active and inactive icon"""
@@ -91,14 +109,20 @@ class MeetingRecorderApp(rumps.App):
             with open(current_meeting_path, 'w') as f:
                 f.write(meeting_path)
 
-            # Start recording process - output will be appended to the meeting file
+            # Open meeting file for appending
+            self.meeting_file = open(meeting_path, 'a')
+
+            # Start recording process - capture output to display and write to file
             record_script = os.path.join(script_dir, "record.py")
-            with open(meeting_path, 'a') as meeting_file:
-                self.process = subprocess.Popen(
-                    ["uv", "run", record_script, "--model", "tiny", "--duration", "2", "--fp16"],
-                    stdout=meeting_file,
-                    stderr=subprocess.PIPE
-                )
+            self.process = subprocess.Popen(
+                ["uv", "run", record_script, "--model", "tiny", "--duration", "2", "--fp16"],
+                stdout=subprocess.PIPE,
+                stderr=None  # Let stderr print to console
+            )
+
+            # Start thread to read and output the process output
+            self.output_thread = threading.Thread(target=self.output_reader, daemon=True)
+            self.output_thread.start()
 
             self.recording = True
             self.blink()  # Start blinking
@@ -123,6 +147,15 @@ class MeetingRecorderApp(rumps.App):
                     pass  # Process is dead or will die soon
             finally:
                 self.process = None
+
+        # Wait for output thread to finish reading remaining output
+        if self.output_thread and self.output_thread.is_alive():
+            self.output_thread.join(timeout=2)
+
+        # Close meeting file
+        if self.meeting_file:
+            self.meeting_file.close()
+            self.meeting_file = None
 
         self.icon = self.icon_inactive
         self.record_button.title = "Start Recording"
