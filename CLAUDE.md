@@ -1,14 +1,5 @@
 # Meeting Recording Instructions
 
-## Available Commands
-
-- `/meeting:start [TITLE]` - Start a new meeting recording with the given title
-- `/meeting:stop` - Stop the current recording
-
-For detailed command documentation, see:
-- `.claude/commands/meeting:start.md`
-- `.claude/commands/meeting:stop.md`
-
 ## Answering Questions About Meetings
 
 When the user asks questions about a meeting:
