@@ -1,0 +1,8 @@
+name: meetings-ai
+root: ~/Work/tweak-things/meetings-ai/
+
+startup_window: main
+
+windows:
+  - claude: claude --dangerously-skip-permissions
+  - transcript: uv run main.py
