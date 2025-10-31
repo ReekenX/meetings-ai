@@ -25,8 +25,8 @@ class MeetingRecorderApp(rumps.App):
 
         # Set up icon paths
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.icon_active = os.path.join(script_dir, "icons", "active.png")
-        self.icon_inactive = os.path.join(script_dir, "icons", "inactive.png")
+        self.icon_active = os.path.join(script_dir, "images", "active.png")
+        self.icon_inactive = os.path.join(script_dir, "images", "inactive.png")
 
         # Set initial icon
         self.icon = self.icon_inactive
