@@ -1,5 +1,7 @@
 # Meeting Recording Instructions
 
+Most of the times when user will be asking a question - it will be about the meeting that happened.
+
 ## Answering Questions About Meetings
 
 When the user asks questions about a meeting:
