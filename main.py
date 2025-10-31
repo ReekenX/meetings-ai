@@ -9,6 +9,8 @@ import subprocess
 import signal
 import threading
 import os
+import re
+from datetime import datetime
 
 class MeetingRecorderApp(rumps.App):
     def __init__(self):
@@ -44,6 +46,18 @@ class MeetingRecorderApp(rumps.App):
         else:
             self.stop_recording()
 
+    def create_slug(self, title):
+        """Create URL-friendly slug from title."""
+        # Convert to lowercase
+        slug = title.lower()
+        # Replace non-alphanumeric characters with hyphens
+        slug = re.sub(r'[^a-z0-9-]', '-', slug)
+        # Replace multiple hyphens with single hyphen
+        slug = re.sub(r'-+', '-', slug)
+        # Remove leading/trailing hyphens
+        slug = slug.strip('-')
+        return slug
+
     def start_recording(self):
         response = rumps.Window(
             message="Enter meeting title:",
@@ -57,10 +71,35 @@ class MeetingRecorderApp(rumps.App):
         if response.clicked:
             meeting_title = response.text
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            record_script = os.path.join(script_dir, "record.sh")
-            self.process = subprocess.Popen(
-                [record_script, meeting_title]
-            )
+
+            # Create slug and filename
+            slug = self.create_slug(meeting_title)
+            date_str = datetime.now().strftime("%Y-%m-%d")
+            meeting_filename = f"{date_str}-{slug}.md"
+            meetings_dir = os.path.join(script_dir, "meetings")
+            meeting_path = os.path.join(meetings_dir, meeting_filename)
+
+            # Ensure meetings directory exists
+            os.makedirs(meetings_dir, exist_ok=True)
+
+            # Create meeting file with title
+            with open(meeting_path, 'w') as f:
+                f.write(f"# {meeting_title}\n\n")
+
+            # Store current meeting path
+            current_meeting_path = os.path.join(script_dir, ".current-meeting")
+            with open(current_meeting_path, 'w') as f:
+                f.write(meeting_path)
+
+            # Start recording process - output will be appended to the meeting file
+            record_script = os.path.join(script_dir, "record.py")
+            with open(meeting_path, 'a') as meeting_file:
+                self.process = subprocess.Popen(
+                    ["uv", "run", record_script, "--model", "tiny", "--duration", "2", "--fp16"],
+                    stdout=meeting_file,
+                    stderr=subprocess.PIPE
+                )
+
             self.recording = True
             self.blink()  # Start blinking
             self.record_button.title = "Stop Recording"
