@@ -90,7 +90,6 @@ class DualSourceTranscriber:
 
         # Threading
         self.running = False
-        self.last_speech_time = time.time()  # Track last time we heard speech
 
         # Load Whisper models - one for each source to avoid conflicts
         try:
@@ -154,6 +153,7 @@ class DualSourceTranscriber:
                     "stream": None,
                     "audio_thread": None,
                     "transcription_thread": None,
+                    "last_speech_time": time.time(),  # Track per-source speech activity
                 }
             )
             print(
@@ -194,6 +194,7 @@ class DualSourceTranscriber:
                     "stream": None,
                     "audio_thread": None,
                     "transcription_thread": None,
+                    "last_speech_time": time.time(),  # Track per-source speech activity
                 }
             )
             print(
@@ -410,8 +411,8 @@ class DualSourceTranscriber:
                 if text:  # Only print non-empty transcriptions
                     timestamp = datetime.now().strftime("%H:%M")
                     print(f"[{timestamp}] {source['who']}: {text}", flush=True)
-                    # Update last speech time
-                    self.last_speech_time = time.time()
+                    # Update last speech time for this source
+                    source["last_speech_time"] = time.time()
 
             except queue.Empty:
                 continue
@@ -485,12 +486,27 @@ class DualSourceTranscriber:
         try:
             # Keep main thread alive and check for silence timeout
             while self.running:
-                # Check if we've exceeded silence timeout
+                # Check if we've exceeded silence timeout on ALL sources
                 if self.silence_timeout > 0:
-                    elapsed_silence = time.time() - self.last_speech_time
-                    if elapsed_silence > self.silence_timeout:
+                    current_time = time.time()
+                    all_sources_silent = True
+                    max_silence_duration = 0
+
+                    # Check each source for silence
+                    for source in self.sources:
+                        if source["stream"] is not None:
+                            elapsed_silence = current_time - source["last_speech_time"]
+                            max_silence_duration = max(max_silence_duration, elapsed_silence)
+
+                            # If any source has recent speech, not all are silent
+                            if elapsed_silence <= self.silence_timeout:
+                                all_sources_silent = False
+                                break
+
+                    # Only terminate if ALL sources have been silent for the timeout period
+                    if all_sources_silent and max_silence_duration > self.silence_timeout:
                         print(
-                            f"\n\nNo speech detected for {self.silence_timeout} seconds. Stopping automatically...",
+                            f"\n\nNo speech detected from any source for {self.silence_timeout} seconds. Stopping automatically...",
                             file=sys.stderr,
                             flush=True,
                         )
@@ -518,8 +534,17 @@ class DualSourceTranscriber:
 
         # Exit with code 0 if stopped due to silence timeout
         if self.silence_timeout > 0:
-            elapsed_silence = time.time() - self.last_speech_time
-            if elapsed_silence > self.silence_timeout:
+            current_time = time.time()
+            all_sources_silent = True
+
+            for source in self.sources:
+                if source["stream"] is not None:
+                    elapsed_silence = current_time - source["last_speech_time"]
+                    if elapsed_silence <= self.silence_timeout:
+                        all_sources_silent = False
+                        break
+
+            if all_sources_silent:
                 sys.exit(0)
 
     def __del__(self):
