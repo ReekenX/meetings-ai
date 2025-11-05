@@ -25,11 +25,15 @@ from datetime import datetime
 from pathlib import Path
 import ssl
 import json
+import signal
 
 import numpy as np
 import pyaudio
 import whisper
 import torch
+
+# Ignore SIGPIPE to prevent script termination when stdout breaks
+signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 
 
 class DualSourceTranscriber:
@@ -68,13 +72,17 @@ class DualSourceTranscriber:
         self.share_model = share_model
         self.use_fp16 = use_fp16 and torch.cuda.is_available()
         self.max_buffer_size = max_buffer_size
+        self.stdout_broken = False  # Track if stdout pipe is broken
 
         # Load corrections from file if it exists
-        corrections_file = Path("corrections.json")
+        corrections_file = Path("meetings/.corrections.json")
         if corrections_file.exists():
             try:
                 with open(corrections_file, "r") as f:
                     self.custom_words = json.load(f)
+                # Count total correction variations
+                total_variations = sum(len(variations) for variations in self.custom_words.values())
+                print(f"Loaded {len(self.custom_words)} correction words ({total_variations} variations) from {corrections_file}", file=sys.stderr, flush=True)
             except Exception:
                 self.custom_words = {}
         else:
@@ -219,15 +227,39 @@ class DualSourceTranscriber:
             print("   - AirPods Pro II are connected", file=sys.stderr, flush=True)
             sys.exit(1)
 
+    def safe_print(self, message, file=sys.stdout, **kwargs):
+        """Safely print message, handling BrokenPipeError gracefully."""
+        if self.stdout_broken and file == sys.stdout:
+            return  # Skip if stdout is broken
+
+        try:
+            print(message, file=file, **kwargs)
+        except BrokenPipeError:
+            if file == sys.stdout:
+                self.stdout_broken = True
+                # Try to log to stderr instead
+                try:
+                    print(f"[stdout broken, logging to stderr] {message}", file=sys.stderr, flush=True)
+                except:
+                    pass  # If stderr also fails, silently continue
+            # Don't raise - just continue processing
+        except Exception:
+            # Silently handle any other print errors
+            pass
+
     def audio_callback(self, source_idx):
         """Create audio callback for a specific source."""
 
         def callback(in_data, frame_count, time_info, status):
             if status:
-                print(
-                    f"Audio callback status for {self.sources[source_idx]['who']}: {status}",
-                    flush=True,
-                )
+                try:
+                    print(
+                        f"Audio callback status for {self.sources[source_idx]['who']}: {status}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                except:
+                    pass
 
             # Convert bytes to numpy array
             audio_data = np.frombuffer(in_data, dtype=np.float32)
@@ -277,10 +309,14 @@ class DualSourceTranscriber:
 
                     # Ensure the audio chunk is exactly the right size
                     if len(to_process) != chunk_samples:
-                        print(
-                            f"Warning: Audio chunk size mismatch for {source['who']}: {len(to_process)} != {chunk_samples}",
-                            flush=True,
-                        )
+                        try:
+                            print(
+                                f"Warning: Audio chunk size mismatch for {source['who']}: {len(to_process)} != {chunk_samples}",
+                                file=sys.stderr,
+                                flush=True,
+                            )
+                        except:
+                            pass
                         continue
 
                     # Queue for transcription (drop if full)
@@ -292,7 +328,12 @@ class DualSourceTranscriber:
             except queue.Empty:
                 continue
             except Exception as e:
-                print(f"Error in audio worker for {source['who']}: {e}", flush=True)
+                # Log error but continue processing
+                try:
+                    print(f"Error in audio worker for {source['who']}: {e}", file=sys.stderr, flush=True)
+                except:
+                    pass
+                continue
 
     def transcription_worker(self, source_idx):
         """Worker thread that transcribes audio for a specific source."""
@@ -306,10 +347,14 @@ class DualSourceTranscriber:
 
                 # Validate audio chunk size
                 if len(audio_chunk) != expected_samples:
-                    print(
-                        f"Skipping invalid audio chunk for {source['who']}: {len(audio_chunk)} samples (expected {expected_samples})",
-                        flush=True,
-                    )
+                    try:
+                        print(
+                            f"Skipping invalid audio chunk for {source['who']}: {len(audio_chunk)} samples (expected {expected_samples})",
+                            file=sys.stderr,
+                            flush=True,
+                        )
+                    except:
+                        pass
                     continue
 
                 # Ensure float32 and correct shape
@@ -410,17 +455,31 @@ class DualSourceTranscriber:
 
                 if text:  # Only print non-empty transcriptions
                     timestamp = datetime.now().strftime("%H:%M")
-                    print(f"[{timestamp}] {source['who']}: {text}", flush=True)
+                    self.safe_print(f"[{timestamp}] {source['who']}: {text}", flush=True)
                     # Update last speech time for this source
                     source["last_speech_time"] = time.time()
 
             except queue.Empty:
                 continue
+            except BrokenPipeError:
+                # Mark stdout as broken and continue processing
+                self.stdout_broken = True
+                try:
+                    print(f"BrokenPipeError in transcription worker for {source['who']}, continuing...", file=sys.stderr, flush=True)
+                except:
+                    pass
+                continue
             except Exception as e:
-                print(
-                    f"Error in transcription worker for {source['who']}: {e}",
-                    flush=True,
-                )
+                # Log error but continue processing
+                try:
+                    print(
+                        f"Error in transcription worker for {source['who']}: {e}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                except:
+                    pass
+                continue
 
     def apply_custom_words(self, text):
         """Apply custom word replacements for better name recognition."""
