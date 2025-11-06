@@ -115,7 +115,7 @@ class MeetingRecorderApp(rumps.App):
             # Start recording process - capture output to display and write to file
             record_script = os.path.join(script_dir, "record.py")
             self.process = subprocess.Popen(
-                ["uv", "run", record_script, "--model", "tiny", "--duration", "2", "--fp16"],
+                ["uv", "run", record_script, "--model", "tiny", "--duration", "5", "--fp16"],
                 stdout=subprocess.PIPE,
                 stderr=None  # Let stderr print to console
             )

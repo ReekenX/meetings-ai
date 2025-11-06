@@ -98,6 +98,7 @@ class DualSourceTranscriber:
 
         # Threading
         self.running = False
+        self.blink_thread = None
 
         # Load Whisper models - one for each source to avoid conflicts
         try:
@@ -495,6 +496,20 @@ class DualSourceTranscriber:
 
         return text
 
+    def blink_worker(self):
+        """Worker thread that prints a blinking indicator every 2 seconds."""
+        blink_state = True
+        while self.running:
+            try:
+                if blink_state:
+                    print("🔴", file=sys.stderr, flush=True, end="\r")
+                else:
+                    print("  ", file=sys.stderr, flush=True, end="\r")
+                blink_state = not blink_state
+                time.sleep(2.0)
+            except Exception:
+                pass
+
     def start_transcription(self):
         """Start dual-source transcription."""
 
@@ -525,6 +540,12 @@ class DualSourceTranscriber:
 
         # Start worker threads for each source
         self.running = True
+
+        # Start blink indicator thread
+        self.blink_thread = threading.Thread(
+            target=self.blink_worker, daemon=True
+        )
+        self.blink_thread.start()
 
         for idx, source in enumerate(self.sources):
             if source["stream"] is not None:
@@ -583,6 +604,9 @@ class DualSourceTranscriber:
                 source["stream"].close()
 
         # Wait for threads to finish
+        if self.blink_thread is not None:
+            self.blink_thread.join(timeout=1.0)
+
         for source in self.sources:
             if source["audio_thread"] is not None:
                 source["audio_thread"].join(timeout=1.0)
