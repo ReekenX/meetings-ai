@@ -19,7 +19,6 @@ class MeetingRecorderApp(rumps.App):
         self.process = None
         self.recording = False
         self.blink_state = False
-        self.blink_timer = None
         self.output_thread = None
         self.meeting_file = None
 
@@ -50,13 +49,12 @@ class MeetingRecorderApp(rumps.App):
                     self.meeting_file.write(line_str)
                     self.meeting_file.flush()
 
-    def blink(self):
-        """Toggle between active and inactive icon"""
+    @rumps.timer(2)
+    def blink(self, _):
+        """Toggle between active and inactive icon every 2 seconds"""
         if self.recording:
-            self.icon = self.icon_active if self.blink_state else self.icon_inactive
             self.blink_state = not self.blink_state
-            self.blink_timer = threading.Timer(1.0, self.blink)
-            self.blink_timer.start()
+            self.icon = self.icon_active if self.blink_state else self.icon_inactive
 
     def toggle_recording(self, sender):
         if not self.recording:
@@ -125,13 +123,10 @@ class MeetingRecorderApp(rumps.App):
             self.output_thread.start()
 
             self.recording = True
-            self.blink()  # Start blinking
             self.record_button.title = "Stop Recording"
 
     def stop_recording(self):
         self.recording = False
-        if self.blink_timer:
-            self.blink_timer.cancel()
 
         if self.process:
             try:
